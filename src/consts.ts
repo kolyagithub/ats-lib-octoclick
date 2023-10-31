@@ -1,6 +1,3 @@
-export const RU_CAPTCHA_BASE_URL = process.env.RU_CAPTCHA_BASE_URL;
-export const RU_CAPTCHA_KEY = process.env.RU_CAPTCHA_KEY;
-
 export const RESPONSE_CODES = {
   SUCCESS: 200, // Успешный ответ
   INTERNAL_SERVER_ERROR: 500, // сервер столкнулся с неожиданной ошибкой, которая помешала ему выполнить запрос.

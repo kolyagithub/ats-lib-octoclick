@@ -5,8 +5,7 @@ import RedisCache from '@atsorganization/ats-lib-redis';
 export interface IResultFullDataCampaignCountryItem {
   value: string;
   label: string;
-  titleEn: string;
-  code?: string;
+  country_code: string;
 }
 interface ICollectionsOctoclick extends ICollectionsNetwork {
   countries: IResultFullDataCampaignCountryItem[];

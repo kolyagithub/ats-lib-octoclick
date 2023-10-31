@@ -9,6 +9,7 @@ import {
 
 import { Logger } from '@atsorganization/ats-lib-logger';
 import { IResultFullDataCampaignCountryItem } from './Octoclick';
+import OctoclickAccount from "./OctoclickAccount";
 const qs = require('qs'); // Импортируйте библиотеку qs
 
 export default class OctoclickConnection extends NetworkConnection {
@@ -17,17 +18,17 @@ export default class OctoclickConnection extends NetworkConnection {
    */
   protected async initCollections(): Promise<void> {
     const externalUrlGetALlCountries = 'https://restcountries.com/v3.1/all';
-    const externalUrlCountries = 'api/autocomplete/searchcountries/search/';
+    const externalUrlCountries = 'dictionary';
     if (this.network.collections && this.api_conn) {
       const allCountries = await HttpInstance.request({
         url: externalUrlGetALlCountries,
         method: 'GET'
       }).then((d: IHttpResponse) => d.data);
       this.network.collections.countries = await this.api_conn?.get(externalUrlCountries).then((r: IHttpResponse) => {
-        return r.data?.data.map((m: IResultFullDataCampaignCountryItem) => {
+        return r.data.data?.country.map((m: IResultFullDataCampaignCountryItem) => {
           return {
             ...m,
-            code: allCountries.find((f: any) => f.name.common.toLowerCase() === m.titleEn.toLowerCase())?.cca2
+            code: allCountries.find((f: any) => f.name.common.toLowerCase() === m.label.toLowerCase())?.cca2
           };
         });
       });
@@ -95,9 +96,9 @@ export default class OctoclickConnection extends NetworkConnection {
   //   return new OctoclickCampaign(this);
   // }
 
-  // getAccount(): Account {
-  //   return new OctoclickAccount(this);
-  // }
+  getAccount(): Account {
+    return new OctoclickAccount(this);
+  }
 
   /**
    * Поддержание соединения
