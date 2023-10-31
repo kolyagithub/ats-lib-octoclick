@@ -15,8 +15,8 @@ export default class RuCaptcha {
         const params = 'key=' + this.api_key + '&method=' + method + '&sitekey=' + site_key + '&pageurl=' + site_url + '&json=1';
         console.log('RuCaptcha request: ', url, params);
         const rucapthaRes = await axios.post(url, params);
-        console.log('RuCaptcha response: ', rucapthaRes);
-        return rucapthaRes.data.split('|')[1];
+        //console.log('RuCaptcha response: ', rucapthaRes);
+        return rucapthaRes.data.request;
     }
 
     async result(id: any): Promise<any> {
@@ -28,11 +28,11 @@ export default class RuCaptcha {
         while (promise === 'CAPCHA_NOT_READY') {
             promise = await new Promise((resolve, reject) => {
                 setTimeout(async () => {
-                    resolve(await axios.get(url + '?' + params).then(r => r.data));
+                    resolve(await axios.get(url + '?' + params).then(r => r.data.request));
                 }, await_sec);
             });
             console.log('id_resolve_recapcha response: ', promise);
         }
-        return promise.split('|')[1];
+        return promise;
     }
 }
