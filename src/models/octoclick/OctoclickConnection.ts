@@ -1,14 +1,17 @@
-`import {
+import {
   NetworkConnection,
   Campaign,
   HttpInstance,
   IHttpConfig,
   IHttpResponse,
-  Account
+  Account, HTML
 } from '@atsorganization/ats-lib-ntwk-common';
 
 import { Logger } from '@atsorganization/ats-lib-logger';
 import { IResultFullDataCampaignCountryItem } from './Octoclick';
+import RuCaptcha from '../../services/RuCaptcha';
+import { RU_CAPTCHA_KEY } from '../../consts';
+import ModelSiteIdCaptcha from "./api/ModelSiteIdCaptcha";
 const qs = require('qs'); // Импортируйте библиотеку qs
 
 export default class OctoclickConnection extends NetworkConnection {
@@ -34,7 +37,19 @@ export default class OctoclickConnection extends NetworkConnection {
       });
     }
   }
-
+  
+  private solveReCapathca = async (site_id: any, site_url: any): Promise<any> => {
+    const ruCaptcha = new RuCaptcha(RU_CAPTCHA_KEY);
+    const id_res_solve_recaptcha = await ruCaptcha.sendReCaptcha(site_id, site_url);
+    const result_captcha = await ruCaptcha.result(id_res_solve_recaptcha);
+    console.log('result_captcha', id_res_solve_recaptcha, result_captcha);
+    return result_captcha;
+  };
+  
+  private mutationAttrSiteKey(data: string): string {
+    return data.replace('data-sitekey', 'datasitekey');
+  }
+  
   /**
    * Авторизация в сети
    * @returns
@@ -47,6 +62,24 @@ export default class OctoclickConnection extends NetworkConnection {
     };
     const externalUrl = 'auth/email';
     const url = `${this.network.base_url_admin}${externalUrl}`;
+    
+    let modelSiteIdCaptcha: ModelSiteIdCaptcha = {
+      isCaptcha: '.cf-turnstile (datasitekey)'
+    };
+    const loginPage = await HttpInstance.request({
+      url,
+      method: 'GET',
+      baseUrl: this.network.base_url_admin
+    }).then((d: any) => d);
+    // In API doc write static site-key 0x4AAAAAAAGTd1uFW5wSEBqK.
+    // Use there or find site-key by parse?
+    const isCaptcha = HTML.parse(this.mutationAttrSiteKey(loginPage.data), modelSiteIdCaptcha)?.['isCaptcha'];
+    console.log('isCaptcha', isCaptcha);
+    if (isCaptcha) {
+      const turnstile_response_recaptcha = await this.solveReCapathca(isCaptcha, this.network.base_url_admin + externalUrl);
+      console.log('turnstile_response_recaptcha', turnstile_response_recaptcha);
+      dataAuth['cf-turnstile-response'] = turnstile_response_recaptcha;
+    }
     
     const headers = {
       'Content-Type': 'application/json',
@@ -65,8 +98,8 @@ export default class OctoclickConnection extends NetworkConnection {
     
     console.log(response);
     
-    new Logger(response.data).setNetwork(this.network.name).setDescription('Получены авториз. данные из СЕТИ').log();
-    return response.data;
+    new Logger(response.status).setNetwork(this.network.name).setDescription('Получены авториз. данные из СЕТИ').log();
+    return response.status;
   }
 
   /**
@@ -102,9 +135,40 @@ export default class OctoclickConnection extends NetworkConnection {
   // }
 
   /**
-   * Поддержание соежинения в живых
+   * Поддержание соединения
    */
   keepAlive(): void {
-  
+    // admin conn
+    const callbackErrAdmin = async (response: { config: IHttpConfig; status?: number }): Promise<any> => {
+      if (response.status === 401 && response.config && !response.config.__isRetryRequest) {
+        new Logger({}).setDescription('keepAlive 401').setNetwork(this.network.name).log();
+        return await this.auth().then(async (authData: string) => {
+          response.config.__isRetryRequest = true;
+          response.config.baseUrl = this.network?.base_url_admin;
+          response.config.headers = {
+            Cookie: authData
+          };
+          console.log(response.config);
+          await this.setCache(authData);
+          this.admin_conn = new HttpInstance({
+            baseUrl: this.network?.base_url_admin,
+            headers: { Cookie: authData }
+          });
+          return HttpInstance.request?.(response.config);
+        });
+      }
+      return response;
+    };
+
+    // api conn
+    const callbackErrApi = async (response: { config: IHttpConfig; status?: number }): Promise<any> => {
+      return response;
+    };
+    const callbackRequestAdmin = async (config: IHttpConfig) => {
+      return config;
+    };
+
+    this.api_conn?.keepAlive(async () => {}, callbackErrApi);
+    this.admin_conn?.keepAlive(callbackRequestAdmin, callbackErrAdmin);
   }
 }
