@@ -92,9 +92,9 @@ export default class OctoclickConnection extends NetworkConnection {
     return this;
   }
 
-  // getCampaign(): Campaign {
-  //   return new OctoclickCampaign(this);
-  // }
+  getCampaign(): Campaign {
+    throw new Error('Method not implemented.');
+  }
 
   getAccount(): Account {
     return new OctoclickAccount(this);
