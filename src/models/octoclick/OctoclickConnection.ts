@@ -8,8 +8,8 @@ import {
 } from '@atsorganization/ats-lib-ntwk-common';
 
 import { Logger } from '@atsorganization/ats-lib-logger';
-import { IResultFullDataCampaignCountryItem } from './Octoclick';
 import OctoclickAccount from "./OctoclickAccount";
+import OctoclickCampaign from "./OctoclickCampaign";
 const qs = require('qs'); // Импортируйте библиотеку qs
 
 export default class OctoclickConnection extends NetworkConnection {
@@ -17,20 +17,10 @@ export default class OctoclickConnection extends NetworkConnection {
    * Инициализация коллекций
    */
   protected async initCollections(): Promise<void> {
-    const externalUrlGetALlCountries = 'https://restcountries.com/v3.1/all';
-    const externalUrlCountries = 'dictionary';
+    const externalUrlDictionary = 'dictionary';
     if (this.network.collections && this.api_conn) {
-      const allCountries = await HttpInstance.request({
-        url: externalUrlGetALlCountries,
-        method: 'GET'
-      }).then((d: IHttpResponse) => d.data);
-      this.network.collections.countries = await this.api_conn?.get(externalUrlCountries).then((r: IHttpResponse) => {
-        return r.data.data?.country.map((m: IResultFullDataCampaignCountryItem) => {
-          return {
-            ...m,
-            code: allCountries.find((f: any) => f.name.common.toLowerCase() === m.label.toLowerCase())?.cca2
-          };
-        });
+      this.network.collections.countries = await this.api_conn?.get(externalUrlDictionary).then((r: IHttpResponse) => {
+        return r.data.data?.country;
       });
     }
   }
@@ -93,7 +83,7 @@ export default class OctoclickConnection extends NetworkConnection {
   }
 
   getCampaign(): Campaign {
-    throw new Error('Method not implemented.');
+    return new OctoclickCampaign(this);
   }
 
   getAccount(): Account {

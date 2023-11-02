@@ -5,10 +5,6 @@
     ],
     "rules": {
         "curly": false,
-        "ordered-imports": false,
-        "interface-name": [
-            true,
-            "never-prefix"
-        ]
+        "ordered-imports": false
     }
 }

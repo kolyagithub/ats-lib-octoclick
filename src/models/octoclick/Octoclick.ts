@@ -3,7 +3,7 @@ import OctoclickConnection from './OctoclickConnection';
 import RedisCache from '@atsorganization/ats-lib-redis';
 
 export interface IResultFullDataCampaignCountryItem {
-  value: string;
+  value: number;
   label: string;
   country_code: string;
 }
