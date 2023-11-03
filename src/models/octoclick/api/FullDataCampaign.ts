@@ -20,7 +20,7 @@ export interface IResultFullDataCreativeDataBidCondition {
   configuration: IResultFullDataCreativeDataBidConditionConf;
 }
 export interface IResultFullDataCreativeData {
-  bcid: number;
+  bcid: string;
   campaign_id: number;
   ad_type: number;
   status: number;

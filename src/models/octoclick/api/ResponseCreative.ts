@@ -1,7 +1,7 @@
 import { IResultFullDataCreativeData } from './FullDataCampaign';
 import { IResponse } from "./IResponse";
 
-export default class ResponseAddCreative {
+export default class ResponseCreative {
   
   constructor(readonly _value: IResponse<IResultFullDataCreativeData>) {}
 

@@ -2,7 +2,7 @@ import FullDataCampaign, {
   IResultFullDataCreativeDataBidCondition
 } from "./FullDataCampaign";
 
-export interface IAddDataCreative {
+export interface IDataCreative {
   name: string | null;
   text: string;
   target_url: string;
@@ -14,29 +14,29 @@ export interface IAddDataCreative {
   use_campaign_targeting: boolean | null;
 }
 
-export default class AddDataCreative {
-  constructor(readonly _value: IAddDataCreative) {}
+export default class DataCreative {
+  constructor(readonly _value: IDataCreative) {}
 
-  get value(): IAddDataCreative {
+  get value(): IDataCreative {
     return this._value;
   }
 
-  setName(name: string): AddDataCreative {
+  setName(name: string): DataCreative {
     this._value.name = name;
     return this;
   }
 
-  setBid(bid: number): AddDataCreative {
+  setBid(bid: number): DataCreative {
     this._value.bid_to = bid;
     return this;
   }
   
-  setTargetUrl(targetUrl: string): AddDataCreative {
+  setTargetUrl(targetUrl: string): DataCreative {
     this._value.target_url = targetUrl;
     return this;
   }
 
-  static fromFullDataCampaign(fullDataCampaign: FullDataCampaign): AddDataCreative {
+  static fromFullDataCampaign(fullDataCampaign: FullDataCampaign): DataCreative {
     const {
       creative: {
         ad_type,
@@ -50,7 +50,7 @@ export default class AddDataCreative {
         use_campaign_targeting
       }
     } = fullDataCampaign.value;
-    return new AddDataCreative({
+    return new DataCreative({
       name,
       text,
       target_url,

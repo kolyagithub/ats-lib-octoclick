@@ -1,15 +1,12 @@
-const Dotenv = require('dotenv-webpack');
-var webpack = require('webpack'),
-  path = require('path'),
-  // , TerserPlugin = require("terser-webpack-plugin")
-  env = process.env.WEBPACK_ENV;
-console.log(env);
-var libraryName = 'ats-lib-octoclick',
-  outputFile = '',
-  plugins = [];
+const Dotenv = require('dotenv-webpack')
+    , path = require('path')
+    , env = process.env.WEBPACK_ENV
+    , libraryName = 'ats-lib-octoclick';
+
+let outputFile = '';
+
 // configure output for proper build type
 if (env === 'build') {
-  // plugins.push(new TerserPlugin());
   outputFile = 'index' + '.min.js';
 } else {
   outputFile = 'index' + '.js';
@@ -17,6 +14,7 @@ if (env === 'build') {
 
 module.exports = {
   plugins: [new Dotenv()],
+  mode: env,
   entry: path.join(__dirname, 'src', 'index.ts'),
   output: {
     path: path.join(__dirname, 'lib'),
