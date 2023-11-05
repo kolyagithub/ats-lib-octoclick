@@ -15,3 +15,7 @@ export enum CreativeStatus {
     ACTIVE,
     DECLINED
 }
+export enum FilterType {
+    ALLOW = 1,
+    DISALLOW
+}

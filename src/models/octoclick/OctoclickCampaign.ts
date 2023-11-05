@@ -10,7 +10,7 @@ import {
   ICampaign,
   Campaign,
   BidCampaign,
-  StatsRaw, NameCampaign, TargetUrlCampaign, CountryCampaign
+  StatsRaw, NameCampaign, TargetUrlCampaign, CountryCampaign, BrowserVersionCampaign
 } from "@atsorganization/ats-lib-ntwk-common";
 import ResponseCreative from './api/ResponseCreative';
 import DataCampaign from './api/DataCampaign';
@@ -30,7 +30,7 @@ export default class OctoclickCampaign extends Campaign {
    * @returns
    */
   async create(data: ICampaign): Promise<ResponceApiNetwork<Campaign>> {
-    const { name, template_id, bid, country, placements_data, target_url, schedule } = data;
+    const { name, template_id, bid, country, placements_data, target_url, schedule, browser_version } = data;
     
     const fullDataCampaign: FullDataCampaign | null = await this.getFullDataCampaign(new IdCampaign(template_id.value));
     if (!fullDataCampaign) {
@@ -54,7 +54,9 @@ export default class OctoclickCampaign extends Campaign {
     const addDataCampaign = DataCampaign.fromFullDataCampaign(fullDataCampaign)
     .setName(String(name.value))
     .setCountry(NeedCountry)
-    .setPlacements(placements_data.value);
+    .setPlacements(placements_data.value)
+    .setBrowserVersion(browser_version.value)
+    .setSchedule(schedule);
     
     const responseCreateCampaign: ResponseCampaign | null = await this.addRaw(addDataCampaign);
     
@@ -81,7 +83,9 @@ export default class OctoclickCampaign extends Campaign {
       .setCountry(country)
       .setPlacementsData(placements_data)
       .setTargetUrl(target_url)
-      .setStatus(new StatusCampaign('moderation'));
+      .setStatus(new StatusCampaign('moderation'))
+      .setBrowserVersion(browser_version)
+      .setSchedule(new ScheduleCampaign(schedule?.value));
       
       return new ResponceApiNetwork({ code: RESPONSE_CODES.SUCCESS, message: 'OK', data: this });
     } else {
@@ -98,7 +102,7 @@ export default class OctoclickCampaign extends Campaign {
    */
   async update(): Promise<ResponceApiNetwork<Campaign>> {
     
-    const { name, template_id, bid, country, placements_data, target_url, schedule } = this;
+    const { name, template_id, bid, country, placements_data, target_url, browser_version, schedule } = this;
     const fullDataCampaign: FullDataCampaign | null = await this.getFullDataCampaign(this.id);
     if (!fullDataCampaign) {
       return new ResponceApiNetwork({
@@ -128,6 +132,12 @@ export default class OctoclickCampaign extends Campaign {
     }
     if(placements_data) {
       dataCampaign.setPlacements(placements_data.value);
+    }
+    if(browser_version) {
+      dataCampaign.setBrowserVersion(browser_version.value);
+    }
+    if(schedule) {
+      dataCampaign.setSchedule(schedule);
     }
     
     const responseUpdateCampaign: ResponseCampaign | null = await this.updateRaw(dataCampaign);
@@ -162,7 +172,9 @@ export default class OctoclickCampaign extends Campaign {
     .setCountry(country)
     .setPlacementsData(placements_data)
     .setTargetUrl(target_url)
-    .setStatus(new StatusCampaign('moderation'));
+    .setStatus(new StatusCampaign('moderation'))
+    .setBrowserVersion(browser_version)
+    .setSchedule(new ScheduleCampaign(schedule?.value));
     
     return new ResponceApiNetwork({ code: RESPONSE_CODES.SUCCESS, message: 'OK', data: this });
     
@@ -170,11 +182,56 @@ export default class OctoclickCampaign extends Campaign {
   
   /**
    * Установка расписания кампании
-   * по умолчанию полное расписание
+   * по-умолчанию полное расписание
    * @param schedule
    */
   async updateSchedule(schedule: ScheduleCampaign = new ScheduleCampaign()): Promise<ResponceApiNetwork<Campaign>> {
     throw Error('Method not implemented');
+  }
+  
+  /**
+   * Трансформация расписания в нуждный формат
+   * @param weekHours[]
+   * @returns
+   */
+  private transformSchedule(weekHours: number[]): ScheduleCampaign {
+   
+    const between = (x: number, min: number, max: number) => {
+      return x >= min && x <= max;
+    };
+    const result: any = [];
+    
+    for (let weekHour of weekHours) {
+      if(between(weekHour, 0, 23)) {
+        result.push('Mon' + weekHour.toString().padStart(2, '0'));
+      }
+      if(between(weekHour, 24, 47)) {
+        weekHour -= 24;
+        result.push('Tue' + weekHour.toString().padStart(2, '0'));
+      }
+      if(between(weekHour, 48, 71)) {
+        weekHour -= 48;
+        result.push('Wed' + weekHour.toString().padStart(2, '0'));
+      }
+      if(between(weekHour, 72, 95)) {
+        weekHour -= 72;
+        result.push('Thu' + weekHour.toString().padStart(2, '0'));
+      }
+      if(between(weekHour, 96, 119)) {
+        weekHour -= 96;
+        result.push('Fri' + weekHour.toString().padStart(2, '0'));
+      }
+      if(between(weekHour, 120, 143)) {
+        weekHour -= 120;
+        result.push('Sat' + weekHour.toString().padStart(2, '0'));
+      }
+      if(between(weekHour, 144, 167)) {
+        weekHour -= 144;
+        result.push('Sun' + weekHour.toString().padStart(2, '0'));
+      }
+    }
+    
+    return new ScheduleCampaign(result);
   }
   
   /**
@@ -212,7 +269,8 @@ export default class OctoclickCampaign extends Campaign {
         })
     )
     .setStatus(this.prepareStatus(fullDataResponse))
-    // .setSchedule(this.transformSchedule(timeData));
+    .setBrowserVersion(new BrowserVersionCampaign(Number(targeting.browser_version[0])))
+    .setSchedule(this.transformSchedule(targeting.schedule));
     return new ResponceApiNetwork({ code: RESPONSE_CODES.SUCCESS, message: 'OK', data: this });
   }
   
