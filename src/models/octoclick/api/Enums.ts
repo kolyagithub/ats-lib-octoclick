@@ -19,3 +19,6 @@ export enum FilterType {
     ALLOW = 1,
     DISALLOW
 }
+export enum AdType {
+    POPUNDER = 2
+}

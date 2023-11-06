@@ -15,7 +15,7 @@ import ResponseCreative from './api/ResponseCreative';
 import DataCreative from './api/DataCreative';
 import ResponseCampaign from './api/ResponseCampaign';
 import { IResultFullDataCampaignCountryItem } from "./Octoclick";
-import { CampaignStatus, CreativeStatus, PlacementType } from "./api/Enums";
+import { AdType, CampaignStatus, CreativeStatus, PlacementType } from "./api/Enums";
 import { status } from "@atsorganization/ats-lib-ntwk-common/lib/models/StatusCampaign";
 import { Logger } from "@atsorganization/ats-lib-logger";
 import ResponseMinBid, { IResultMinBidConditionsGroup } from "./api/ResponseMinBid";
@@ -512,7 +512,7 @@ export default class OctoclickCampaign extends Campaign {
   
   private async getMinBid(): Promise<ResponseMinBid | null> {
     
-    const externalURL = `minimal-bid/`;
+    const externalURL = `minimal-bid?page[size]=100`;
     let responseData: ResponseMinBid | null = null;
     if (this.conn.api_conn) {
       const headers = {
@@ -539,30 +539,33 @@ export default class OctoclickCampaign extends Campaign {
     try {
       
       const responseMinBid: ResponseMinBid | null = await this.getMinBid();
-      let minBidValue = null;
+      const minBidValues: number[] = [];
       const countryValue: IResultFullDataCampaignCountryItem = this.conn.network.collections?.countries?.find(
-          (f: any) => String(f.country_code) === String(this.country.value)
+          (f: any) => String(f.country_code) === String(this.country?.value)
       );
       
       const minBidArr = responseMinBid?.value?.data;
       if(Array.isArray(minBidArr)) {
         for (const minBidObj of minBidArr) {
           const groups = minBidObj.conditions.groups;
-          const isExists = groups.filter((g: IResultMinBidConditionsGroup) =>
-              (g.field === "COUNTRY" && g.value === countryValue?.value));
-          if(isExists.length) {
-            minBidValue = minBidObj.min_bid;
-            break;
+          const isExistsCountry = groups.filter((g: IResultMinBidConditionsGroup) =>
+              (g.field === "COUNTRY" && g.value === countryValue?.value)
+          );
+          const isExistsAd = groups.filter((g: IResultMinBidConditionsGroup) =>
+              (g.field === "AD_TYPE" && g.value === AdType.POPUNDER)
+          );
+          if(isExistsCountry.length && isExistsAd.length) {
+            minBidValues.push(minBidObj.min_bid);
           }
         }
       }
       
-      if(!minBidValue) {
+      if(!minBidValues.length) {
         new Logger(`MinBid not found. Country code: [${this.country.value}]`).setTag('').log();
         return new ResponceApiNetwork({ code: RESPONSE_CODES.NOT_FOUND, message: 'OK', data: new BidCampaign(0) });
       }
       
-      return new ResponceApiNetwork({ code: RESPONSE_CODES.SUCCESS, message: 'OK', data: new BidCampaign(minBidValue) });
+      return new ResponceApiNetwork({ code: RESPONSE_CODES.SUCCESS, message: 'OK', data: new BidCampaign(Math.min(...minBidValues)) });
       
     } catch (error) {
       return new ResponceApiNetwork({
