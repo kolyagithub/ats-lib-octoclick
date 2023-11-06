@@ -1,5 +1,4 @@
 import { RESPONSE_CODES } from '../../consts';
-import FullDataCampaign from "./api/FullDataCampaign";
 import {
   ScheduleCampaign,
   ResponceApiNetwork,
@@ -13,7 +12,6 @@ import {
   StatsRaw, NameCampaign, TargetUrlCampaign, CountryCampaign, BrowserVersionCampaign
 } from "@atsorganization/ats-lib-ntwk-common";
 import ResponseCreative from './api/ResponseCreative';
-import DataCampaign from './api/DataCampaign';
 import DataCreative from './api/DataCreative';
 import ResponseCampaign from './api/ResponseCampaign';
 import { IResultFullDataCampaignCountryItem } from "./Octoclick";
@@ -21,6 +19,8 @@ import { CampaignStatus, CreativeStatus, PlacementType } from "./api/Enums";
 import { status } from "@atsorganization/ats-lib-ntwk-common/lib/models/StatusCampaign";
 import { Logger } from "@atsorganization/ats-lib-logger";
 import ResponseMinBid, { IResultMinBidConditionsGroup } from "./api/ResponseMinBid";
+import FullDataCampaign from "./api/FullDataCampaign";
+import DataCampaign from "./api/DataCampaign";
 
 export default class OctoclickCampaign extends Campaign {
   
@@ -32,151 +32,150 @@ export default class OctoclickCampaign extends Campaign {
   async create(data: ICampaign): Promise<ResponceApiNetwork<Campaign>> {
     const { name, template_id, bid, country, placements_data, target_url, schedule, browser_version } = data;
     
-    const fullDataCampaign: FullDataCampaign | null = await this.getFullDataCampaign(new IdCampaign(template_id.value));
-    if (!fullDataCampaign) {
-      return new ResponceApiNetwork({
-        code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
-        message: 'Not get data from network'
-      });
-    }
-    
-    if (!target_url.value) {
-      return new ResponceApiNetwork({
-        code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
-        message: 'Not get data from network'
-      });
-    }
-    
-    const NeedCountry: IResultFullDataCampaignCountryItem = this.conn.network.collections?.countries?.find(
-        (f: any) => String(f.country_code) === String(country.value)
-    );
-    
-    const addDataCampaign = DataCampaign.fromFullDataCampaign(fullDataCampaign)
-    .setName(String(name.value))
-    .setCountry(NeedCountry)
-    .setPlacements(placements_data.value)
-    .setBrowserVersion(browser_version.value)
-    .setSchedule(schedule);
-    
-    const responseCreateCampaign: ResponseCampaign | null = await this.addRaw(addDataCampaign);
-    
-    if (responseCreateCampaign?.value.meta.code !== 200) {
-      return new ResponceApiNetwork({
-        code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
-        message: JSON.stringify(responseCreateCampaign) + ' add campaigns'
-      });
-    }
-    const newCampId = responseCreateCampaign?.value.data.bcid;
-    
-    const newCreative = await this.createCreative(
-        newCampId,
-        DataCreative.fromFullDataCampaign(fullDataCampaign)
-        .setName(String(name.value))
-        .setBid(Number(bid.value) / 1000)
-        .setTargetUrl(target_url.value)
-    );
-    if (newCreative?.value.meta.code === 200) {
-      this.setId(new IdCampaign(newCampId))
-      .setName(name)
-      .setTemplateId(template_id)
-      .setBid(bid)
-      .setCountry(country)
-      .setPlacementsData(placements_data)
-      .setTargetUrl(target_url)
-      .setStatus(new StatusCampaign('moderation'))
-      .setBrowserVersion(browser_version)
-      .setSchedule(new ScheduleCampaign(schedule?.value));
+    try {
       
-      return new ResponceApiNetwork({ code: RESPONSE_CODES.SUCCESS, message: 'OK', data: this });
-    } else {
-      await this.removeUnit(new IdCampaign(newCampId));
+      const fullDataCampaign: FullDataCampaign | null = await this.getFullDataCampaign(new IdCampaign(template_id.value));
+      if (!fullDataCampaign) {
+        return new ResponceApiNetwork({
+          code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
+          message: 'Not get data from network'
+        });
+      }
+      
+      if (!target_url.value) {
+        return new ResponceApiNetwork({
+          code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
+          message: 'Not get data from network'
+        });
+      }
+      
+      const NeedCountry: IResultFullDataCampaignCountryItem = this.conn.network.collections?.countries?.find(
+          (f: any) => String(f.country_code) === String(country.value)
+      );
+      
+      const addDataCampaign = DataCampaign.fromFullDataCampaign(fullDataCampaign)
+      .setName(String(name.value))
+      .setCountry(NeedCountry)
+      .setPlacements(placements_data.value)
+      .setBrowserVersion(browser_version.value)
+      .setSchedule(schedule);
+      
+      const responseCreateCampaign: ResponseCampaign | null = await this.addRaw(addDataCampaign);
+      
+      if (responseCreateCampaign?.value.meta.code !== 200) {
+        return new ResponceApiNetwork({
+          code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
+          message: JSON.stringify(responseCreateCampaign) + ' add campaigns'
+        });
+      }
+      const newCampId = responseCreateCampaign?.value.data.bcid;
+      
+      const newCreative = await this.createCreative(
+          newCampId,
+          DataCreative.fromFullDataCampaign(fullDataCampaign)
+          .setName(String(name.value))
+          .setBid(Number(bid.value) / 1000)
+          .setTargetUrl(target_url.value)
+      );
+      if (newCreative?.value.meta.code === 200) {
+        this.setId(new IdCampaign(newCampId))
+        .setName(name)
+        .setTemplateId(template_id)
+        .setBid(bid)
+        .setCountry(country)
+        .setPlacementsData(placements_data)
+        .setTargetUrl(target_url)
+        .setStatus(new StatusCampaign('moderation'))
+        .setBrowserVersion(browser_version)
+        .setSchedule(new ScheduleCampaign(schedule?.value));
+        
+        return new ResponceApiNetwork({ code: RESPONSE_CODES.SUCCESS, message: 'OK', data: this });
+      } else {
+        await this.removeUnit(new IdCampaign(newCampId));
+        return new ResponceApiNetwork({
+          code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
+          message: JSON.stringify(newCreative) + ' add creative'
+        });
+      }
+      
+    } catch (error) {
       return new ResponceApiNetwork({
         code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
-        message: JSON.stringify(newCreative) + ' add creative'
+        message: 'error create campaign'
       });
     }
+    
   }
   
   /**
    * Обновление кампании
    */
   async update(): Promise<ResponceApiNetwork<Campaign>> {
+    const { target_url } = this;
     
-    const { name, template_id, bid, country, placements_data, target_url, browser_version, schedule } = this;
-    const fullDataCampaign: FullDataCampaign | null = await this.getFullDataCampaign(this.id);
-    if (!fullDataCampaign) {
-      return new ResponceApiNetwork({
-        code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
-        message: 'Not get data from network'
-      });
-    }
-    
-    if (!target_url.value) {
-      return new ResponceApiNetwork({
-        code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
-        message: 'Not get data from network'
-      });
-    }
-    
-    const { value: { creative: { bcid: updatedCreativeId}}} =  fullDataCampaign;
-    
-    const dataCampaign = DataCampaign.fromFullDataCampaign(fullDataCampaign);
-    if(name) {
-      dataCampaign.setName(String(name.value));
-    }
-    if(country) {
-      const NeedCountry: IResultFullDataCampaignCountryItem = this.conn.network.collections?.countries?.find(
-          (f: any) => String(f.country_code) === String(country.value)
+    try {
+      
+      const fullDataCampaign: FullDataCampaign | null = await this.getFullDataCampaign(this.id);
+      if (!fullDataCampaign) {
+        return new ResponceApiNetwork({
+          code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
+          message: 'Not get data from network'
+        });
+      }
+      
+      if (!target_url.value) {
+        return new ResponceApiNetwork({
+          code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
+          message: 'Not get data from network'
+        });
+      }
+      
+      const { value: {
+        campaign: { bcid: updatedCampId, name,  targeting, status: statusCampaign },
+        creative: { bcid: updatedCreativeId, bid_to, status: statusCreative }
+      }} =  fullDataCampaign;
+      
+      const dataCreative = DataCreative.fromFullDataCampaign(fullDataCampaign);
+      if(target_url) {
+        dataCreative.setTargetUrl(target_url.value);
+      }
+      const responseUpdatedCreative = await this.updateCreative(
+          updatedCampId,
+          updatedCreativeId,
+          dataCreative
       );
-      dataCampaign.setCountry(NeedCountry);
-    }
-    if(placements_data) {
-      dataCampaign.setPlacements(placements_data.value);
-    }
-    if(browser_version) {
-      dataCampaign.setBrowserVersion(browser_version.value);
-    }
-    if(schedule) {
-      dataCampaign.setSchedule(schedule);
-    }
-    
-    const responseUpdateCampaign: ResponseCampaign | null = await this.updateRaw(dataCampaign);
-    if (responseUpdateCampaign?.value.meta.code !== 200) {
+      if (responseUpdatedCreative?.value?.meta.code !== 200) {
+        new Logger("Creative not updated").setTag('').log();
+      }
+      
+      this.setId(new IdCampaign(updatedCampId))
+      .setName(new NameCampaign(name))
+      .setTargetUrl(target_url)
+      .setCountry(
+          new CountryCampaign(
+              this.conn.network.collections?.countries?.find(
+                  (f: any) => String(f.value) === String(targeting.countries[0])
+              ))
+      )
+      .setBid(new BidCampaign(Number(bid_to)))
+      .setPlacementsData(
+          new PlacementCampaign({
+            list: [targeting.ip_list[0].range] ?? [],
+            type: targeting.ip_list[0].filter_type === PlacementType.BLACK_LIST ?? false
+          })
+      )
+      .setStatus(this.prepareStatus(statusCampaign, statusCreative))
+      .setBrowserVersion(new BrowserVersionCampaign(Number(targeting.browser_version[0] ?? 0)))
+      .setSchedule(this.transformSchedule(targeting.schedule));
+      
+      return new ResponceApiNetwork({ code: RESPONSE_CODES.SUCCESS, message: 'OK', data: this });
+      
+    } catch (error) {
       return new ResponceApiNetwork({
         code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
-        message: JSON.stringify(responseUpdateCampaign) + ' update campaigns'
+        message: 'error update campaign'
       });
     }
-    const updatedCampId = responseUpdateCampaign?.value.data.bcid;
-
-    const dataCreative = DataCreative.fromFullDataCampaign(fullDataCampaign);
-    if(bid) {
-      dataCreative.setBid(Number(bid.value) / 1000);
-    }
-    if(target_url) {
-      dataCreative.setTargetUrl(target_url.value);
-    }
-    const responseUpdatedCreative = await this.updateCreative(
-        updatedCampId,
-        updatedCreativeId,
-        dataCreative
-    );
-    if (responseUpdatedCreative?.value?.meta.code !== 200) {
-      new Logger("Creative not updated").setTag('').log();
-    }
-    
-    this.setId(new IdCampaign(updatedCampId))
-    .setName(name)
-    .setTemplateId(template_id)
-    .setBid(bid)
-    .setCountry(country)
-    .setPlacementsData(placements_data)
-    .setTargetUrl(target_url)
-    .setStatus(new StatusCampaign('moderation'))
-    .setBrowserVersion(browser_version)
-    .setSchedule(new ScheduleCampaign(schedule?.value));
-    
-    return new ResponceApiNetwork({ code: RESPONSE_CODES.SUCCESS, message: 'OK', data: this });
     
   }
   
@@ -239,52 +238,59 @@ export default class OctoclickCampaign extends Campaign {
    */
   async fetch(): Promise<ResponceApiNetwork<Campaign>> {
     this.handlerErrNotIdCampaign();
-    const fullDataResponse: FullDataCampaign | null = await this.getFullDataCampaign(this.id);
-    if (!fullDataResponse) {
+
+    try {
+      
+      const fullDataResponse: FullDataCampaign | null = await this.getFullDataCampaign(this.id);
+      if (!fullDataResponse) {
+        return new ResponceApiNetwork({
+          code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
+          message: 'Not get data from network'
+        });
+      }
+
+      const {
+        campaign: { bcid, name, targeting, status: statusCampaign },
+        creative: { target_url, bid_to, status: statusCreative }
+      } = fullDataResponse.value;
+      
+      this.setId(new IdCampaign(bcid))
+      .setName(new NameCampaign(name))
+      .setTargetUrl(new TargetUrlCampaign(target_url))
+      .setCountry(
+          new CountryCampaign(
+              this.conn.network.collections?.countries?.find(
+                  (f: any) => String(f.value) === String(targeting.countries[0])
+              ))
+      )
+      .setBid(new BidCampaign(Number(bid_to)))
+      .setPlacementsData(
+          new PlacementCampaign({
+            list: [targeting.ip_list[0].range] ?? [],
+            type: targeting.ip_list[0].filter_type === PlacementType.BLACK_LIST ?? false
+          })
+      )
+      .setStatus(this.prepareStatus(statusCampaign, statusCreative))
+      .setBrowserVersion(new BrowserVersionCampaign(Number(targeting.browser_version[0] ?? 0)))
+      .setSchedule(this.transformSchedule(targeting.schedule));
+      return new ResponceApiNetwork({ code: RESPONSE_CODES.SUCCESS, message: 'OK', data: this });
+      
+    } catch (error) {
       return new ResponceApiNetwork({
         code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
-        message: 'Not get data from network'
+        message: 'error fetch campaign'
       });
     }
     
-    const {
-      campaign: { bcid, name, targeting },
-      creative: { target_url, bid_to }
-    } = fullDataResponse.value;
-    
-    this.setId(new IdCampaign(bcid))
-    .setName(new NameCampaign(name))
-    .setTargetUrl(new TargetUrlCampaign(target_url))
-    .setCountry(
-        new CountryCampaign(
-          this.conn.network.collections?.countries?.find(
-            (f: any) => String(f.value) === String(targeting.countries[0])
-        ))
-    )
-    .setBid(new BidCampaign(Number(bid_to)))
-    .setPlacementsData(
-        new PlacementCampaign({
-          list: [targeting.ip_list[0].range] ?? [],
-          type: targeting.ip_list[0].filter_type === PlacementType.BLACK_LIST ?? false
-        })
-    )
-    .setStatus(this.prepareStatus(fullDataResponse))
-    .setBrowserVersion(new BrowserVersionCampaign(Number(targeting.browser_version[0])))
-    .setSchedule(this.transformSchedule(targeting.schedule));
-    return new ResponceApiNetwork({ code: RESPONSE_CODES.SUCCESS, message: 'OK', data: this });
   }
   
   /**
    * Подготовка корректного статуса для API
-   * @param data
+   * @param statusCampaign
+   * @param statusCreative
    * @returns
    */
-  private prepareStatus(data: FullDataCampaign): StatusCampaign {
-    const {
-      campaign: { status: statusCampaign },
-      creative: { status: statusCreative }
-    } = data.value;
-    
+  private prepareStatus(statusCampaign: number, statusCreative: number): StatusCampaign {
     let resultStatus: status = 'rejected';
     
     // Если у креатива статус модерация то используем его статус для определения статуса кампании
@@ -452,20 +458,31 @@ export default class OctoclickCampaign extends Campaign {
   private async changeCampaignStatus(id: IdCampaign, campaignStatus: CampaignStatus): Promise<ResponceApiNetwork> {
     const externalURL = `campaign/${id.value}/change-status/${campaignStatus}`;
     let resultSwitchStatusUnit = null;
-    if (this.conn.api_conn) {
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-      resultSwitchStatusUnit = await this.conn.api_conn
+    
+    try {
+      
+      if (this.conn.api_conn) {
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        resultSwitchStatusUnit = await this.conn.api_conn
         .patch(externalURL, null, headers)
         .then((d: IHttpResponse) => d);
+      }
+      const success = resultSwitchStatusUnit?.status === 200;
+      
+      return new ResponceApiNetwork({
+        code: success ? RESPONSE_CODES.SUCCESS : RESPONSE_CODES.INTERNAL_SERVER_ERROR,
+        message: success ? 'OK' : JSON.stringify(resultSwitchStatusUnit)
+      });
+      
+    } catch (error) {
+      return new ResponceApiNetwork({
+        code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
+        message: 'error when change campaign status'
+      });
     }
-    const success = resultSwitchStatusUnit?.status === 200;
     
-    return new ResponceApiNetwork({
-      code: success ? RESPONSE_CODES.SUCCESS : RESPONSE_CODES.INTERNAL_SERVER_ERROR,
-      message: success ? 'OK' : JSON.stringify(resultSwitchStatusUnit)
-    });
   }
   
   /**
@@ -518,31 +535,42 @@ export default class OctoclickCampaign extends Campaign {
    */
   async minBid(): Promise<ResponceApiNetwork<BidCampaign>> {
     this.handlerErrNotCountryCampaign();
-    const responseMinBid: ResponseMinBid | null = await this.getMinBid();
-    let minBidValue = null;
-    const countryValue: IResultFullDataCampaignCountryItem = this.conn.network.collections?.countries?.find(
-        (f: any) => String(f.country_code) === String(this.country.value)
-    );
     
-    const minBidArr = responseMinBid?.value?.data;
-    if(Array.isArray(minBidArr)) {
-      for (const minBidObj of minBidArr) {
-        const groups = minBidObj.conditions.groups;
-        const isExists = groups.filter((g: IResultMinBidConditionsGroup) =>
-            (g.field === "COUNTRY" && g.value === countryValue?.value));
-        if(isExists.length) {
-          minBidValue = minBidObj.min_bid;
-          break;
+    try {
+      
+      const responseMinBid: ResponseMinBid | null = await this.getMinBid();
+      let minBidValue = null;
+      const countryValue: IResultFullDataCampaignCountryItem = this.conn.network.collections?.countries?.find(
+          (f: any) => String(f.country_code) === String(this.country.value)
+      );
+      
+      const minBidArr = responseMinBid?.value?.data;
+      if(Array.isArray(minBidArr)) {
+        for (const minBidObj of minBidArr) {
+          const groups = minBidObj.conditions.groups;
+          const isExists = groups.filter((g: IResultMinBidConditionsGroup) =>
+              (g.field === "COUNTRY" && g.value === countryValue?.value));
+          if(isExists.length) {
+            minBidValue = minBidObj.min_bid;
+            break;
+          }
         }
       }
+      
+      if(!minBidValue) {
+        new Logger(`MinBid not found. Country code: [${this.country.value}]`).setTag('').log();
+        return new ResponceApiNetwork({ code: RESPONSE_CODES.NOT_FOUND, message: 'OK', data: new BidCampaign(0) });
+      }
+      
+      return new ResponceApiNetwork({ code: RESPONSE_CODES.SUCCESS, message: 'OK', data: new BidCampaign(minBidValue) });
+      
+    } catch (error) {
+      return new ResponceApiNetwork({
+        code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
+        message: 'error get MinBid()'
+      });
     }
     
-    if(!minBidValue) {
-      new Logger(`MinBid not found. Coutry code: [${this.country.value}]`).setTag('').log();
-      return new ResponceApiNetwork({ code: RESPONSE_CODES.NOT_FOUND, message: 'OK', data: new BidCampaign(0) });
-    }
-    
-    return new ResponceApiNetwork({ code: RESPONSE_CODES.SUCCESS, message: 'OK', data: new BidCampaign(minBidValue) });
     
   }
   
