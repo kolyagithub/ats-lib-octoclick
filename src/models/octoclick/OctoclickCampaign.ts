@@ -15,11 +15,11 @@ import ResponseCreative from './api/ResponseCreative';
 import DataCreative from './api/DataCreative';
 import ResponseCampaign from './api/ResponseCampaign';
 import { IResultFullDataCampaignCountryItem } from "./Octoclick";
-import { AdType, CampaignStatus, CreativeStatus, PlacementType } from "./api/Enums";
+import { AdType, CampaignStatus, CreativeStatus, FilterType } from "./api/Enums";
 import { status } from "@atsorganization/ats-lib-ntwk-common/lib/models/StatusCampaign";
 import { Logger } from "@atsorganization/ats-lib-logger";
 import ResponseMinBid, { IResultMinBidConditionsGroup } from "./api/ResponseMinBid";
-import FullDataCampaign from "./api/FullDataCampaign";
+import FullDataCampaign, { IResultFullDataCampaignDataTargetingIpList } from './api/FullDataCampaign';
 import DataCampaign from "./api/DataCampaign";
 
 export default class OctoclickCampaign extends Campaign {
@@ -160,8 +160,8 @@ export default class OctoclickCampaign extends Campaign {
       .setBid(new BidCampaign(Number(bid_to)))
       .setPlacementsData(
           new PlacementCampaign({
-            list: [targeting.ip_list[0].range] ?? [],
-            type: targeting.ip_list[0].filter_type === PlacementType.BLACK_LIST ?? false
+            list: [...new Set(targeting.ip_list.map((obj: IResultFullDataCampaignDataTargetingIpList) => obj.range))] ?? [],
+            type: targeting.ip_list[0].filter_type === FilterType.DENY ?? false
           })
       )
       .setStatus(this.prepareStatus(statusCampaign, statusCreative))
@@ -266,8 +266,8 @@ export default class OctoclickCampaign extends Campaign {
       .setBid(new BidCampaign(Number(bid_to)))
       .setPlacementsData(
           new PlacementCampaign({
-            list: [targeting.ip_list[0].range] ?? [],
-            type: targeting.ip_list[0].filter_type === PlacementType.BLACK_LIST ?? false
+            list: [...new Set(targeting.ip_list.map((obj: IResultFullDataCampaignDataTargetingIpList) => obj.range))] ?? [],
+            type: targeting.ip_list[0].filter_type === FilterType.DENY ?? false
           })
       )
       .setStatus(this.prepareStatus(statusCampaign, statusCreative))
@@ -387,21 +387,7 @@ export default class OctoclickCampaign extends Campaign {
    * @returns
    */
   protected async updateRaw(data: DataCampaign): Promise<ResponseCampaign | null> {
-    const externalUrl = `campaign/${data.value.bcid}`;
-    
-    let responseData: ResponseCampaign | null = null;
-    if (this.conn.api_conn) {
-      responseData = await this.conn.api_conn
-      .patch(`${externalUrl}`, data.value, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      .then((d: IHttpResponse) => {
-        return new ResponseCampaign(d.data)
-      });
-    }
-    return responseData;
+    throw new Error('Method not implemented.');
   }
   
   /**

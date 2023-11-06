@@ -1,9 +1,10 @@
 import FullDataCampaign, {
   IResultFullDataCampaignDataSettings,
-  IResultFullDataCampaignDataTargeting, IResultFullDataCampaignDataTargetingIpList
+  IResultFullDataCampaignDataTargeting,
+  IResultFullDataCampaignDataTargetingIpList
 } from "./FullDataCampaign";
 import { IResultFullDataCampaignCountryItem } from "../Octoclick";
-import { FilterType, PlacementType } from "./Enums";
+import { FilterType } from "./Enums";
 import { ScheduleCampaign } from "@atsorganization/ats-lib-ntwk-common";
 
 export interface IDataCampaign {
@@ -46,7 +47,7 @@ export default class DataCampaign {
     }
     
     const { list, type } = placements;
-    const newPlacementType: PlacementType = type ? PlacementType.BLACK_LIST : PlacementType.WHITE_LIST;
+    const newPlacementType: FilterType = type ? FilterType.DENY : FilterType.ALLOW;
     
     for (const ip of list) {
       
