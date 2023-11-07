@@ -44,11 +44,10 @@ export default class OctoclickConnection extends NetworkConnection {
       Referer: url,
       Origin: this.network.base_url_api
     };
-    let response;
     
     try {
       
-      response = await HttpInstance.request({
+      const response = await HttpInstance.request({
         url,
         method: 'POST',
         baseUrl: this.network.base_url_api,
@@ -57,12 +56,13 @@ export default class OctoclickConnection extends NetworkConnection {
         maxRedirects: 0,
         validateStatus: (status: any) => status === 200 || status === 302
       } as any);
+      
       const accessToken = response?.data.data.token;
       new Logger(accessToken).setNetwork(this.network.name).setDescription('Получены авториз. данные из СЕТИ').log();
       return accessToken;
       
     } catch (err) {
-      new Logger(`Response error: ${response?.data.errors[0].title}`).setTag('api').log();
+      new Logger(`Response error: ${err}`).setTag('api').log();
     }
     
     
