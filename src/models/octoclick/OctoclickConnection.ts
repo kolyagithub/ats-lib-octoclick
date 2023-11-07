@@ -95,9 +95,11 @@ export default class OctoclickConnection extends NetworkConnection {
    */
   keepAlive(): void {
     
-    const callbackErrApi = async (response: { config: IHttpConfig; status?: number }): Promise<any> => {
-      if (response.status === 401 && response.config && !response.config.__isRetryRequest) {
-        new Logger({}).setDescription('keepAlive 401').setNetwork(this.network.name).log();
+    const callbackErrApi = async (response: { config: IHttpConfig; status?: number, data: any }): Promise<any> => {
+      if(response.status === 200) {
+        return response;
+      } else if (response.status === 401 && response.config && !response.config.__isRetryRequest) {
+        new Logger(response.data.errors[0].title).setDescription('keepAlive 401').setNetwork(this.network.name).log();
         return await this.auth().then(async (authData: any) => {
           response.config.__isRetryRequest = true;
           response.config.baseUrl = this.network?.base_url_api;
@@ -111,8 +113,11 @@ export default class OctoclickConnection extends NetworkConnection {
           });
           return HttpInstance.request?.(response.config);
         });
+        
+      } else {
+        new Logger(`Response error: ${response.data.errors[0].title}`).setTag('api').log();
       }
-      return response;
+      
     };
     const callbackRequestApi = async (config: IHttpConfig) => {
       return config;

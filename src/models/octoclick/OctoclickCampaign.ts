@@ -402,6 +402,9 @@ export default class OctoclickCampaign extends Campaign {
     if (this.conn.api_conn) {
       data = await this.conn.api_conn.get(externalUrl).then(async (resp: IHttpResponse) => {
         const campaign = resp.data?.data;
+        if(Array.isArray(campaign)) {
+          return null;
+        }
         const externalURLGetCampaignCreatives = `campaign/creative?filter[campaign.bcid:%3D]=${campaign.bcid}`;
         
         const creative = await this.conn.api_conn
