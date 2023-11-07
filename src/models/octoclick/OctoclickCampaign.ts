@@ -15,12 +15,21 @@ import ResponseCreative from './api/ResponseCreative';
 import DataCreative from './api/DataCreative';
 import ResponseCampaign from './api/ResponseCampaign';
 import { IResultFullDataCampaignCountryItem } from "./Octoclick";
-import { AdType, CampaignStatus, CreativeStatus, FilterType } from "./api/Enums";
+import {
+  AdType,
+  CampaignStatus,
+  CreativeStatus,
+  FilterType,
+  StatisticGroupByType, StatisticMetricType,
+  UserOccupationType
+} from "./api/Enums";
 import { status } from "@atsorganization/ats-lib-ntwk-common/lib/models/StatusCampaign";
 import { Logger } from "@atsorganization/ats-lib-logger";
 import ResponseMinBid, { IResultMinBidConditionsGroup } from "./api/ResponseMinBid";
 import FullDataCampaign, { IResultFullDataCampaignDataTargetingIpList } from './api/FullDataCampaign';
 import DataCampaign from "./api/DataCampaign";
+import ResponseStatsTable, { IResultStatsTableData } from "./api/ResponseStatsTable";
+import { IRequestStatsTable } from "./api/IRequestStatsTable";
 
 export default class OctoclickCampaign extends Campaign {
   
@@ -145,7 +154,7 @@ export default class OctoclickCampaign extends Campaign {
           dataCreative
       );
       if (responseUpdatedCreative?.value?.meta.code !== 200) {
-        new Logger("Creative not updated").setTag('').log();
+        new Logger("Creative not updated").setTag('api').log();
       }
       
       this.setId(new IdCampaign(updatedCampId))
@@ -567,12 +576,82 @@ export default class OctoclickCampaign extends Campaign {
     
   }
   
+  private async fetchStats(date: string, page: number, perPage: number): Promise<IResultStatsTableData[] | undefined> {
+    const externalUrl = `statistic/table?page[number]=${page}&page[size]=${perPage}`;
+    
+    const body: IRequestStatsTable = {
+      date_from: date + " 00:00:00",
+      date_to: date + " 23:59:59",
+      metrics: [StatisticMetricType.IMPRESSION, StatisticMetricType.ADVERTISER_SPENT],
+      where: [{
+        field: "CampaignId",
+        operator: "=",
+        value: [Number(this.id.value)]
+      }],
+      group_by: [StatisticGroupByType.SITE_ID],
+      user_occupation: UserOccupationType.ADVERTISER,
+      datetime_range: "day"
+    }
+    
+    let statsData: ResponseStatsTable | undefined = undefined;
+    if (this.conn.api_conn) {
+      const response = await this.conn.api_conn?.post(externalUrl, body, {
+        'Content-Type': 'application/json'
+      });
+      statsData = new ResponseStatsTable(response.data);
+    }
+    
+    return statsData?.value.data
+  }
+  
   /**
    * Статистика
    * @param date
    */
   async stats(date: string): Promise<ResponceApiNetwork<StatsRaw>> {
-    throw new Error('Method not implemented.');
+    this.handlerErrNotIdCampaign();
+    
+    let page = 1;
+    let perPage = 100;
+    const allData: IResultStatsTableData[] = [];
+    
+    while (true) {
+      try {
+        
+        const dataStats = await this.fetchStats(date, page, perPage);
+        if (!dataStats?.length) {
+          break;
+        }
+        allData.push(...dataStats);
+        page++;
+        
+      } catch (error) {
+        new Logger(`fetchStats() error: ${error}`).setTag('api').log();
+        return new ResponceApiNetwork({
+          code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
+          message: 'error fetchStats stats'
+        });
+      }
+    }
+    
+    const data = new StatsRaw(
+        allData.map((m: IResultStatsTableData) => {
+          return {
+            report_date: date,
+            site_id: m.group.SiteId.id,
+            impressions: Number(m.metric.Impression),
+            cost: Number(m.metric.AdvertiserSpent),
+            source_id: 0,
+            bundle_id: 0,
+            id_campaign: String(this.id.value)
+          };
+        })
+    );
+    return new ResponceApiNetwork({
+      code: RESPONSE_CODES.SUCCESS,
+      message: 'OK',
+      data
+    });
   }
   
 }

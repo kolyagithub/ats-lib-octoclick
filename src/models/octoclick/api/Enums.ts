@@ -18,3 +18,13 @@ export enum FilterType {
 export enum AdType {
     POPUNDER = 2
 }
+export enum UserOccupationType {
+    ADVERTISER = 2
+}
+export enum StatisticMetricType {
+    IMPRESSION = "Impression",
+    ADVERTISER_SPENT = "AdvertiserSpent"
+}
+export enum StatisticGroupByType {
+    SITE_ID = "SiteId"
+}
