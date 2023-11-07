@@ -537,20 +537,21 @@ export default class OctoclickCampaign extends Campaign {
       if(Array.isArray(minBidArr)) {
         for (const minBidObj of minBidArr) {
           const groups = minBidObj.conditions.groups;
-          const isExistsCountry = groups.filter((g: IResultMinBidConditionsGroup) =>
-              (g.field === "COUNTRY" && g.value === countryValue?.value)
-          );
           const isExistsAd = groups.filter((g: IResultMinBidConditionsGroup) =>
               (g.field === "AD_TYPE" && g.value === AdType.POPUNDER)
           );
+          const isExistsCountry = groups.filter((g: IResultMinBidConditionsGroup) =>
+            g.operator === '='
+                ? (g.field === "COUNTRY" && g.value === countryValue?.value)
+                : (g.field === "COUNTRY" && g.value !== countryValue?.value && !minBidValues.length)
+          );
+          
           if(isExistsCountry.length && isExistsAd.length) {
             minBidValues.push(minBidObj.min_bid);
           }
         }
-      }
-      
-      if(!minBidValues.length) {
-        new Logger(`MinBid not found. Country code: [${this.country.value}]`).setTag('').log();
+      } else {
+        new Logger(`MinBid not found.`).setTag('api').log();
         return new ResponceApiNetwork({ code: RESPONSE_CODES.NOT_FOUND, message: 'OK', data: new BidCampaign(0) });
       }
       
