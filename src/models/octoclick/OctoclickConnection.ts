@@ -44,18 +44,27 @@ export default class OctoclickConnection extends NetworkConnection {
       Referer: url,
       Origin: this.network.base_url_api
     };
-    const response: IHttpResponse = await HttpInstance.request({
-      url,
-      method: 'POST',
-      baseUrl: this.network.base_url_api,
-      headers,
-      data: qs.stringify(dataAuth),
-      maxRedirects: 0,
-      validateStatus: (status: any) => status === 200 || status === 302
-    } as any);
-    const accessToken = response.data.data.token;
-    new Logger(accessToken).setNetwork(this.network.name).setDescription('Получены авториз. данные из СЕТИ').log();
-    return { accessToken };
+    let response;
+    
+    try {
+      
+      response = await HttpInstance.request({
+        url,
+        method: 'POST',
+        baseUrl: this.network.base_url_api,
+        headers,
+        data: qs.stringify(dataAuth),
+        maxRedirects: 0,
+        validateStatus: (status: any) => status === 200 || status === 302
+      } as any);
+      const accessToken = response?.data.data.token;
+      new Logger(accessToken).setNetwork(this.network.name).setDescription('Получены авториз. данные из СЕТИ').log();
+      return accessToken;
+      
+    } catch (err) {
+      new Logger(`Response error: ${response?.data.errors[0].title}`).setTag('api').log();
+    }
+    
     
   }
 
@@ -65,16 +74,15 @@ export default class OctoclickConnection extends NetworkConnection {
    */
   async open(): Promise<NetworkConnection> {
     let authData = await this.getCashe();
-    authData = JSON.parse(authData);
     if (!authData) {
       authData = await this.auth();
-      await this.setCache(JSON.stringify(authData));
+      await this.setCache(authData);
     }
     // устанока соединения через АПИ
     this.api_conn = new HttpInstance({
       baseUrl: this.network?.base_url_api,
       headers: {
-        Authorization: "Bearer " + authData.accessToken
+        Authorization: "Bearer " + authData
       }
     });
     this.keepAlive();
@@ -98,24 +106,27 @@ export default class OctoclickConnection extends NetworkConnection {
     const callbackErrApi = async (response: { config: IHttpConfig; status?: number, data: any }): Promise<any> => {
       if(response.status === 200) {
         return response;
-      } else if (response.status === 401 && response.config && !response.config.__isRetryRequest) {
-        new Logger(response.data.errors[0].title).setDescription('keepAlive 401').setNetwork(this.network.name).log();
-        return await this.auth().then(async (authData: any) => {
-          response.config.__isRetryRequest = true;
-          response.config.baseUrl = this.network?.base_url_api;
-          response.config.headers = {
-            Authorization: "Bearer " + authData.accessToken
-          };
-          await this.setCache(JSON.stringify(authData));
-          this.api_conn = new HttpInstance({
-            baseUrl: this.network?.base_url_api,
-            headers: { Authorization: "Bearer " + authData.accessToken }
-          });
-          return HttpInstance.request?.(response.config);
-        });
-        
       } else {
-        new Logger(`Response error: ${response.data.errors[0].title}`).setTag('api').log();
+        let isRequiredAuth = response.data.errors[0].title.includes("You do not have enough permissions to perform this operation");
+        if (response.status === 400 && isRequiredAuth && response.config && !response.config.__isRetryRequest) {
+          new Logger(response.data.errors[0].title).setDescription('keepAlive 401').setNetwork(this.network.name).log();
+          return await this.auth().then(async (authData: string) => {
+            response.config.__isRetryRequest = true;
+            response.config.baseUrl = this.network?.base_url_api;
+            response.config.headers = {
+              Authorization: "Bearer " + authData
+            };
+            await this.setCache(authData);
+            this.api_conn = new HttpInstance({
+              baseUrl: this.network?.base_url_api,
+              headers: { Authorization: "Bearer " + authData }
+            });
+            return HttpInstance.request?.(response.config);
+          });
+          
+        } else {
+          new Logger(`Response error: ${response.data.errors[0].title}`).setTag('api').log();
+        }
       }
       
     };
