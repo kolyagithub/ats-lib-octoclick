@@ -86,7 +86,8 @@ export default class OctoclickCampaign extends Campaign {
           .setBid(Number(bid.value) / 1000)
           .setTargetUrl(target_url.value)
       );
-      if (newCreative?.value.meta.code === 200) {
+      
+      if (newCreative?.value) {
         this.setId(new IdCampaign(newCampId))
         .setName(name)
         .setTemplateId(template_id)
@@ -148,14 +149,11 @@ export default class OctoclickCampaign extends Campaign {
       if(target_url) {
         dataCreative.setTargetUrl(target_url.value);
       }
-      const responseUpdatedCreative = await this.updateCreative(
+      await this.updateCreative(
           updatedCampId,
           updatedCreativeId,
           dataCreative
       );
-      if (responseUpdatedCreative?.value?.meta.code !== 200) {
-        new Logger("Creative not updated").setTag('api').log();
-      }
       
       this.setId(new IdCampaign(updatedCampId))
       .setName(new NameCampaign(name))
@@ -333,12 +331,12 @@ export default class OctoclickCampaign extends Campaign {
     let createdCreative = null;
     if (this.conn.api_conn) {
       createdCreative = await this.conn.api_conn
-        ?.post(`${externalUrl}`, data.value, {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        })
-        .then((d: IHttpResponse) => new ResponseCreative(d.data));
+      ?.post(`${externalUrl}`, data.value, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then((d: IHttpResponse) => new ResponseCreative(d?.data));
     }
     return createdCreative;
   }
@@ -617,7 +615,7 @@ export default class OctoclickCampaign extends Campaign {
           }
         }
       } else {
-        new Logger(`MinBid not found.`).setTag('api').log();
+        new Logger(`MinBid not found`).setNetwork(this.conn.network.name).log();
         return new ResponceApiNetwork({ code: RESPONSE_CODES.NOT_FOUND, message: 'OK', data: new BidCampaign(0) });
       }
       
@@ -650,7 +648,7 @@ export default class OctoclickCampaign extends Campaign {
       datetime_range: "day"
     }
     
-    let statsData: ResponseStatsTable | undefined = undefined;
+    let statsData: ResponseStatsTable | undefined;
     if (this.conn.api_conn) {
       const response = await this.conn.api_conn?.post(externalUrl, body, {
         'Content-Type': 'application/json'
@@ -669,7 +667,7 @@ export default class OctoclickCampaign extends Campaign {
     this.handlerErrNotIdCampaign();
     
     let page = 1;
-    let perPage = 100;
+    const perPage = 100;
     const allData: IResultStatsTableData[] = [];
     
     while (true) {
@@ -683,7 +681,6 @@ export default class OctoclickCampaign extends Campaign {
         page++;
         
       } catch (error) {
-        new Logger(`fetchStats() error: ${error}`).setTag('api').log();
         return new ResponceApiNetwork({
           code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
           message: 'error fetchStats stats'

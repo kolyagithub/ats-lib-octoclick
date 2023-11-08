@@ -4,8 +4,11 @@ import {
   Account,
   BalanceAccount,
   ResponceApiNetwork,
-  StatsAccount
-} from '@atsorganization/ats-lib-ntwk-common';
+  StatsAccount, StatsRaw
+} from "@atsorganization/ats-lib-ntwk-common";
+import { IRequestStatsTable } from "./api/IRequestStatsTable";
+import { StatisticMetricType, UserOccupationType } from "./api/Enums";
+import ResponseStatsTableTotal, { IResultStatsTableTotalData } from "./api/ResponseStatsTableTotal";
 
 export default class OctoclickAccount extends Account {
   /**
@@ -43,6 +46,42 @@ export default class OctoclickAccount extends Account {
    * @param dateTo
    */
   async stats(dateFrom: string, dateTo: string): Promise<ResponceApiNetwork<StatsAccount>> {
-    throw new Error('Method not implemented.');
+    dateFrom += " 00:00:00";
+    dateTo += " 23:59:59";
+    
+    const externalUrl = `statistic/table-total`;
+    
+    const body: IRequestStatsTable = {
+      date_from: dateFrom,
+      date_to: dateTo,
+      metrics: [StatisticMetricType.IMPRESSION, StatisticMetricType.ADVERTISER_SPENT],
+      where: undefined,
+      group_by: undefined,
+      user_occupation: UserOccupationType.ADVERTISER,
+      datetime_range: "day"
+    }
+    
+    let statsData: ResponseStatsTableTotal | undefined;
+    if (this.conn.api_conn) {
+      const response = await this.conn.api_conn?.post(externalUrl, body, {
+        'Content-Type': 'application/json'
+      });
+      statsData = new ResponseStatsTableTotal(response.data);
+    }
+    
+    const dataStats: IResultStatsTableTotalData | undefined = statsData?.value.data;
+    const data = new StatsAccount({
+          report_date: dateFrom + ' - ' + dateTo,
+          impressions: Number(dataStats?.metric.Impression),
+          cost: Number(dataStats?.metric.AdvertiserSpent)
+        }
+    );
+    
+    return new ResponceApiNetwork({
+      code: RESPONSE_CODES.SUCCESS,
+      message: 'OK',
+      data
+    });
   }
+  
 }

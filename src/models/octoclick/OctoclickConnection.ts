@@ -107,7 +107,7 @@ export default class OctoclickConnection extends NetworkConnection {
       if(response.status === 200) {
         return response;
       } else {
-        let isRequiredAuth = response.data.errors[0].title.includes("You do not have enough permissions to perform this operation");
+        const isRequiredAuth = response.status === 400 && response.data.errors[0].title.includes("You do not have enough permissions to perform this operation");
         if (response.status === 400 && isRequiredAuth && response.config && !response.config.__isRetryRequest) {
           new Logger(response.data.errors[0].title).setDescription('keepAlive 401').setNetwork(this.network.name).log();
           return await this.auth().then(async (authData: string) => {
@@ -125,7 +125,9 @@ export default class OctoclickConnection extends NetworkConnection {
           });
           
         } else {
-          new Logger(`Response error: URL: [${response.config.url}] Status: [${response.status}]  Message: ${response.data.errors.map((obj: any) => obj?.title.concat(obj?.field))}`).setNetwork(this.network.name).log();
+          const message = Array.isArray(response.data?.errors)
+            ? response.data.errors.map((obj: any) => obj?.title.concat(obj?.field)) : 'Not found';
+          new Logger(`Response error: URL: [${response.config.url}] Status: [${response.status}]  Message: ${message}`).setNetwork(this.network.name).log();
         }
         
       }
