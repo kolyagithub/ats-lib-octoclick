@@ -396,7 +396,22 @@ export default class OctoclickCampaign extends Campaign {
    * @returns
    */
   protected async updateRaw(data: DataCampaign): Promise<ResponseCampaign | null> {
-    throw new Error('Method not implemented.');
+    let body = data.value;
+    
+    const externalUrl = `campaign/${body.bcid}`;
+    let responseData: ResponseCampaign | null = null;
+    if (this.conn.api_conn) {
+      responseData = await this.conn.api_conn
+      .patch(`${externalUrl}`, body, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then((d: IHttpResponse) => {
+        return new ResponseCampaign(d.data)
+      });
+    }
+    return responseData;
   }
   
   /**
@@ -433,7 +448,24 @@ export default class OctoclickCampaign extends Campaign {
    * @returns
    */
   async getStatus(): Promise<ResponceApiNetwork<StatusCampaign>> {
-    throw new Error('Method not implemented.');
+    this.handlerErrNotIdCampaign();
+    
+    const fullDataCampaign: FullDataCampaign | null = await this.getFullDataCampaign(this.id);
+    if (!fullDataCampaign) {
+      return new ResponceApiNetwork({
+        code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
+        message: JSON.stringify(fullDataCampaign)
+      });
+    }
+    
+    const { campaign: { status: statusCampaign }, creative: { status: statusCreative } } =  fullDataCampaign.value;
+    
+    return new ResponceApiNetwork({
+      code: RESPONSE_CODES.SUCCESS,
+      message: 'OK',
+      data: this.prepareStatus(statusCampaign, statusCreative)
+    });
+    
   }
 
   /**
@@ -442,7 +474,32 @@ export default class OctoclickCampaign extends Campaign {
    * @returns
    */
   async updatePlacements(data: PlacementCampaign): Promise<ResponceApiNetwork<Campaign>> {
-    throw new Error('Method not implemented.');
+    this.handlerErrNotIdCampaign();
+    const _val = data.value;
+    const list = [...new Set(_val?.list ?? [])]; // get unique list
+    const type = !!_val?.type;
+    
+    const fullDataCampaign: FullDataCampaign | null = await this.getFullDataCampaign(this.id);
+    if (!fullDataCampaign) {
+      return new ResponceApiNetwork({
+        code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
+        message: 'Not get data from network'
+      });
+    }
+    
+    const dataCampaign: DataCampaign = DataCampaign.fromFullDataCampaign(fullDataCampaign)
+    .setPlacements({ list, type });
+    
+    const responseUpdateCampaign: ResponseCampaign | null = await this.updateRaw(dataCampaign);
+    if (responseUpdateCampaign?.value.meta.code === 200) {
+      return new ResponceApiNetwork({ code: RESPONSE_CODES.SUCCESS, message: 'OK', data: this });
+    }
+    
+    return new ResponceApiNetwork({
+      code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
+      message: JSON.stringify(responseUpdateCampaign)
+    });
+    
   }
 
   /**

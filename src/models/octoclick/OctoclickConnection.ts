@@ -4,7 +4,7 @@ import {
   HttpInstance,
   IHttpConfig,
   IHttpResponse,
-  Account, HTML
+  Account
 } from '@atsorganization/ats-lib-ntwk-common';
 
 import { Logger } from '@atsorganization/ats-lib-logger';
@@ -125,8 +125,9 @@ export default class OctoclickConnection extends NetworkConnection {
           });
           
         } else {
-          new Logger(`Response error: ${response.data.errors[0].title}`).setTag('api').log();
+          new Logger(`Response error: URL: [${response.config.url}] Status: [${response.status}]  Message: ${response.data.errors.map((obj: any) => obj?.title.concat(obj?.field))}`).setNetwork(this.network.name).log();
         }
+        
       }
       
     };

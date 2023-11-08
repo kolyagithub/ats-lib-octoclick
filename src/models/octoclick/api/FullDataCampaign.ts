@@ -74,7 +74,7 @@ export interface IResultFullDataCampaignDataTargeting {
   operators_filter_type: number;
   languages: string[];
   languages_filter_type: number;
-  site_list_ids: string[];
+  site_list_ids: number[];
   site_list_ids_filter_type: number;
   ip_list: IResultFullDataCampaignDataTargetingIpList[];
   site_categories: string[];

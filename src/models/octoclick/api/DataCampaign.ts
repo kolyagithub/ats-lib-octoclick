@@ -49,24 +49,8 @@ export default class DataCampaign {
     const { list, type } = placements;
     const newPlacementType: FilterType = type ? FilterType.DENY : FilterType.ALLOW;
     
-    for (const ip of list) {
-      
-      // check to exists
-      const existsIp: IResultFullDataCampaignDataTargetingIpList[] = this._value.targeting.ip_list
-      .filter(obj => obj.range === ip);
-      
-      if(existsIp) {
-        this._value.targeting.ip_list = this._value.targeting.ip_list
-        .filter(item => item.range !== ip);
-      }
-      
-      // add new
-      this._value.targeting.ip_list.push({
-        range: ip,
-        filter_type: newPlacementType
-      })
-      
-    }
+    this._value.targeting.site_list_ids = [...new Set(list ?? [])];
+    this._value.targeting.site_list_ids_filter_type = newPlacementType;
     
     return this;
     
