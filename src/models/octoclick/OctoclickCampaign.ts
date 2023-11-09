@@ -30,6 +30,7 @@ import FullDataCampaign, { IResultFullDataCampaignDataTargetingIpList } from './
 import DataCampaign from "./api/DataCampaign";
 import ResponseStatsTable, { IResultStatsTableData } from "./api/ResponseStatsTable";
 import { IRequestStatsTable } from "./api/IRequestStatsTable";
+import { Helpers } from "./Helpers";
 
 export default class OctoclickCampaign extends Campaign {
   
@@ -475,7 +476,10 @@ export default class OctoclickCampaign extends Campaign {
   async updatePlacements(data: PlacementCampaign): Promise<ResponceApiNetwork<Campaign>> {
     this.handlerErrNotIdCampaign();
     const _val = data.value;
-    const list = [...new Set(_val?.list ?? [])]; // get unique list
+    let listArr = _val?.list ?? [];
+    listArr = listArr.map(it => { return Helpers.str2num(it) });
+    
+    let list = [...new Set(listArr)]; // get unique list
     const type = !!_val?.type;
     
     const fullDataCampaign: FullDataCampaign | null = await this.getFullDataCampaign(this.id);

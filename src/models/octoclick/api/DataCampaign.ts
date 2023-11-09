@@ -1,11 +1,11 @@
 import FullDataCampaign, {
   IResultFullDataCampaignDataSettings,
-  IResultFullDataCampaignDataTargeting,
-  IResultFullDataCampaignDataTargetingIpList
+  IResultFullDataCampaignDataTargeting
 } from "./FullDataCampaign";
 import { IResultFullDataCampaignCountryItem } from "../Octoclick";
 import { FilterType } from "./Enums";
 import { ScheduleCampaign } from "@atsorganization/ats-lib-ntwk-common";
+import { Helpers } from "../Helpers";
 
 export interface IDataCampaign {
   bcid: string | null;
@@ -49,7 +49,10 @@ export default class DataCampaign {
     const { list, type } = placements;
     const newPlacementType: FilterType = type ? FilterType.DENY : FilterType.ALLOW;
     
-    this._value.targeting.site_list_ids = [...new Set(list ?? [])];
+    let listArr = list ?? [];
+    listArr = listArr.map(it => { return Helpers.str2num(it) });
+    
+    this._value.targeting.site_list_ids = [...new Set(listArr ?? [])];
     this._value.targeting.site_list_ids_filter_type = newPlacementType;
     
     return this;
