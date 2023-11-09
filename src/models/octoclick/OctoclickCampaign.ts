@@ -283,6 +283,7 @@ export default class OctoclickCampaign extends Campaign {
       return new ResponceApiNetwork({ code: RESPONSE_CODES.SUCCESS, message: 'OK', data: this });
       
     } catch (error) {
+      new Logger(`Catch exception in fetch(): ${error}`).setNetwork(this.conn.network.name).log();
       return new ResponceApiNetwork({
         code: RESPONSE_CODES.INTERNAL_SERVER_ERROR,
         message: 'error fetch campaign'
@@ -427,7 +428,7 @@ export default class OctoclickCampaign extends Campaign {
         if(Array.isArray(campaign)) {
           return null;
         }
-        const externalURLGetCampaignCreatives = `campaign/creative?filter[campaign.bcid:%3D]=${campaign.bcid}`;
+        const externalURLGetCampaignCreatives = encodeURI(`campaign/creative?filter[campaign.bcid:=]=${campaign.bcid}`);
         
         const creative = await this.conn.api_conn
           ?.get(externalURLGetCampaignCreatives)
