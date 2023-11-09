@@ -1,0 +1,56 @@
+{
+  "name": "@atsorganization/ats-lib-octoclick",
+  "version": "1.0.0",
+  "description": "Library connection API AdNetwork octoclick",
+  "main": "lib/index.js",
+  "repository": "https://github.com/ATSOrganization/ATS-lib-octoclick",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "build": "WEBPACK_ENV=production webpack",
+    "dev": "WEBPACK_ENV=dev webpack --progress --colors --watch",
+    "test": "mocha --compilers js:babel-core/register --colors -w ./test/*.spec.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run codestyle"
+    }
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.1",
+    "@types/node": "^18.16.0",
+    "babel": "^6.23.0",
+    "babel-core": "^6.26.3",
+    "babel-loader": "^9.1.2",
+    "babel-plugin-add-module-exports": "^1.0.4",
+    "babel-preset-es2015": "^6.24.1",
+    "chai": "^4.3.7",
+    "docsify-cli": "^4.4.4",
+    "husky": "^8.0.3",
+    "jest": "^29.5.0",
+    "mocha": "^10.2.0",
+    "prettier": "^2.8.8",
+    "terser-webpack-plugin": "^5.3.7",
+    "ts-jest": "^29.1.0",
+    "ts-loader": "^9.4.2",
+    "tslint": "^6.1.3",
+    "tslint-config-prettier": "^1.18.0",
+    "typedoc": "^0.24.6",
+    "typescript": "^5.0.4",
+    "webpack": "^5.80.0",
+    "webpack-cli": "^5.0.2"
+  },
+  "dependencies": {
+    "@atsorganization/ats-lib-logger": "^1.0.0",
+    "@atsorganization/ats-lib-ntwk-common": "^1.0.0",
+    "@atsorganization/ats-lib-redis": "^1.0.2",
+    "axios": "^1.3.6",
+    "dotenv": "^16.3.1",
+    "dotenv-webpack": "^8.0.1",
+    "qs": "^6.11.2"
+  }
+}
